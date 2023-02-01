@@ -3,7 +3,6 @@ import numpy as np
 import pandas as pd
 from my_linear_regression import MyLinearRegression as MyLR
 
-
 theta0 = 0
 theta1 = 0
 
@@ -28,15 +27,11 @@ with open('params.csv') as csvfile:
             params_err_case()
 
 if __name__ == "__main__":
+
     model = MyLR(np.array([[theta0], [theta1]]))
 
     df = pd.read_csv("data.csv")
     X = np.array(df["km"])
     Y = np.array(df["price"])
 
-    model.plot(X, Y, plot_options={
-        'xlabel': 'Mileage',
-        'ylabel': 'Price',
-        'xdata_label': 'Mileage',
-        'ydata_label': 'Price',
-    })
+    print(f'The model precision is: {model.loss_(X, Y)}')
