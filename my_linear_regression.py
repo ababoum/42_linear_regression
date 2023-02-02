@@ -30,24 +30,6 @@ class MyLinearRegression():
         return (x - np.min(x)) / (np.max(x) - np.min(x))
 
     @staticmethod
-    def zscore(x, mean, std):
-        return (x - mean) / std
-
-    # @staticmethod
-    # def denormalize_thetas(thetas, m, M):
-    #     t0 = thetas[0] - (m * thetas[1])
-    #     t1 = thetas[1] / (M - m)
-
-    #     return np.array([[t0], [t1]])
-
-    # @staticmethod
-    # def denormalize_thetas_2(thetas, m, M):
-    #     t0 = thetas[0] * (M - m) + m
-    #     t1 = thetas[1] * (M - m) + m
-
-    #     return np.array([[t0], [t1]])
-
-    @staticmethod
     def is_vector_valid(x):
         if not isinstance(x, np.ndarray):
             return False
@@ -106,8 +88,8 @@ class MyLinearRegression():
                 return None
 
             if normalize:
-                x_n = copy.deepcopy(MyLinearRegression.zscore(x, np.mean(x), np.std(x)))
-                y_n = copy.deepcopy(MyLinearRegression.zscore(y, np.mean(x), np.std(x)))
+                x_n = copy.deepcopy(MyLinearRegression.normalize_minmax(x))
+                y_n = copy.deepcopy(y)
             else:
                 x_n = copy.deepcopy(x)
                 y_n = copy.deepcopy(y)
@@ -135,7 +117,16 @@ class MyLinearRegression():
                     self.loss_hist += [l]
 
             if normalize:
-                self.thetas[0] = self.thetas[0] + y.max()
+                self.thetas[1] /= (x.max() - x.min())
+                self.thetas[0] -= x.min() * self.thetas[1]
+
+            # show the loss evolution
+            plt.plot(self.loss_hist, label="Loss evolution")
+            plt.axhline(y = 0, color = 'r', linestyle = '--')
+            plt.title("Loss evolution")
+            plt.legend()
+            plt.show()
+
         except Exception as e:
             print("Warning: ", e, " in fit_")
             return None

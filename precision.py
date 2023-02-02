@@ -35,7 +35,7 @@ if __name__ == "__main__":
     Y_hat = model.predict_(X, normalize=False)
 
     print(f'\nThe model precision is:')
-    print(f'{"  MSE:":<10} {model.mse_(Y, Y_hat)}')
-    print(f'{"  RMSE:":<10} {model.rmse_(Y, Y_hat)}')
-    print(f'{"  MAE:":<10} {model.mae_(Y, Y_hat)}')
-    print(f'{"  R2 Score:":<10} {model.r2score_(Y, Y_hat)}')
+    print(f'{"  MSE:":<11} {model.mse_(Y, Y_hat)}')
+    print(f'{"  RMSE:":<11} {model.rmse_(Y, Y_hat)}')
+    print(f'{"  MAE:":<11} {model.mae_(Y, Y_hat)}')
+    print(f'{"  R2 Score:":<11} {model.r2score_(Y, Y_hat)}')
