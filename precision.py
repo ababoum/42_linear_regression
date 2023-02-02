@@ -6,7 +6,6 @@ from my_linear_regression import MyLinearRegression as MyLR
 theta0 = 0
 theta1 = 0
 
-
 def params_err_case():
     print("Wrong format for parameters θ₀ and θ₁ in params.csv")
     exit(1)
@@ -33,5 +32,10 @@ if __name__ == "__main__":
     df = pd.read_csv("data.csv")
     X = np.array(df["km"])
     Y = np.array(df["price"])
+    Y_hat = model.predict_(X, normalize=False)
 
-    print(f'The model precision is: {model.loss_(X, Y)}')
+    print(f'\nThe model precision is:')
+    print(f'{"  MSE:":<10} {model.mse_(Y, Y_hat)}')
+    print(f'{"  RMSE:":<10} {model.rmse_(Y, Y_hat)}')
+    print(f'{"  MAE:":<10} {model.mae_(Y, Y_hat)}')
+    print(f'{"  R2 Score:":<10} {model.r2score_(Y, Y_hat)}')

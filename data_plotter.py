@@ -37,6 +37,7 @@ if __name__ == "__main__":
     model.plot(X, Y, plot_options={
         'xlabel': 'Mileage',
         'ylabel': 'Price',
-        'xdata_label': 'Mileage',
-        'ydata_label': 'Price',
-    })
+        'xdatalabel': 'Mileage',
+        'ydatalabel': 'Price',
+    },
+        normalize=False)

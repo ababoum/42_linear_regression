@@ -1,7 +1,9 @@
 '''A class that contains all methods necessary to perform linear regression'''
 
+import copy
 import numpy as np
 import matplotlib.pyplot as plt
+
 
 class MyLinearRegression():
     """
@@ -10,16 +12,40 @@ class MyLinearRegression():
     """
 
     def __init__(self, thetas, alpha=0.001, max_iter=1000):
-        self.alpha = alpha
-        self.max_iter = max_iter
-        self.thetas = thetas
 
-        if not isinstance(self.alpha, (int, float)) or alpha <= 0 or alpha >= 1:
+        if not isinstance(alpha, (int, float)) or alpha <= 0 or alpha >= 1:
             raise Exception("Alpha must be strictly between 0 and 1")
         if not isinstance(max_iter, int) or max_iter < 0:
             raise Exception("Max_iter must be a positive integer")
         if not MyLinearRegression.is_theta_valid(thetas):
             raise Exception("Wrong format for thetas")
+
+        self.alpha = alpha
+        self.max_iter = max_iter
+        self.thetas = np.copy(thetas.astype('float64'))
+        self.loss_hist = []
+
+    @staticmethod
+    def normalize_minmax(x):
+        return (x - np.min(x)) / (np.max(x) - np.min(x))
+
+    @staticmethod
+    def zscore(x, mean, std):
+        return (x - mean) / std
+
+    # @staticmethod
+    # def denormalize_thetas(thetas, m, M):
+    #     t0 = thetas[0] - (m * thetas[1])
+    #     t1 = thetas[1] / (M - m)
+
+    #     return np.array([[t0], [t1]])
+
+    # @staticmethod
+    # def denormalize_thetas_2(thetas, m, M):
+    #     t0 = thetas[0] * (M - m) + m
+    #     t1 = thetas[1] * (M - m) + m
+
+    #     return np.array([[t0], [t1]])
 
     @staticmethod
     def is_vector_valid(x):
@@ -71,7 +97,7 @@ class MyLinearRegression():
         res = (x_p.T @ ((x_p @ theta) - y))
         return res / y.size
 
-    def fit_(self, x, y):
+    def fit_(self, x, y, normalize=False):
         try:
             if not MyLinearRegression.is_vector_valid(x) or \
                     not MyLinearRegression.is_vector_valid(y):
@@ -79,22 +105,53 @@ class MyLinearRegression():
             if x.size != y.size:
                 return None
 
-            new_theta = np.copy(self.thetas.astype('float64'))
-            for _ in range(self.max_iter):
-                gradient = MyLinearRegression.simple_gradient(x, y, new_theta)
-                new_theta[0] = new_theta[0] - self.alpha * gradient[0]
-                new_theta[1] = new_theta[1] - self.alpha * gradient[1]
-            self.thetas = new_theta
-        except:
+            if normalize:
+                x_n = copy.deepcopy(MyLinearRegression.zscore(x, np.mean(x), np.std(x)))
+                y_n = copy.deepcopy(MyLinearRegression.zscore(y, np.mean(x), np.std(x)))
+            else:
+                x_n = copy.deepcopy(x)
+                y_n = copy.deepcopy(y)
+
+            for i in range(self.max_iter):
+                gradient = MyLinearRegression.simple_gradient(
+                    x_n, y_n, self.thetas)
+                tt0 = self.thetas[0] - self.alpha * gradient[0]
+                tt1 = self.thetas[1] - self.alpha * gradient[1]
+                self.thetas[0] = tt0
+                self.thetas[1] = tt1
+                if i % 100 == 0:
+                    l = self.loss_(y_n, self.predict_(x_n))
+                    print("Loss: ", l)
+
+                    # Adapt alpha depending on loss
+                    if len(self.loss_hist) > 0 and self.loss_hist[-1] > l:
+                        self.alpha *= 1.05
+                    elif len(self.loss_hist) > 0 and self.loss_hist[-1] < l:
+                        self.alpha /= 10
+                    elif len(self.loss_hist) > 0 and self.loss_hist[-1] == l:
+                        print(
+                            f"Warning: loss has converged. Alpha is now {self.alpha}.")
+                        break
+                    self.loss_hist += [l]
+
+            if normalize:
+                self.thetas[0] = self.thetas[0] + y.max()
+        except Exception as e:
+            print("Warning: ", e, " in fit_")
             return None
 
-    def predict_(self, x):
+    def predict_(self, x, normalize=False):
         try:
             if not isinstance(x, np.ndarray) or (len(x.shape) == 2 and (x.shape[0] < 1 or x.shape[1] != 1))\
                     or (len(x.shape) == 1 and x.shape[0] < 1):
                 return None
 
-            X = MyLinearRegression.add_intercept(x)
+            if normalize:
+                x_n = copy.deepcopy(MyLinearRegression.normalize_minmax(x))
+            else:
+                x_n = copy.deepcopy(x)
+
+            X = MyLinearRegression.add_intercept(x_n)
             if not isinstance(X, np.ndarray):
                 return None
             return np.matmul(X, self.thetas)
@@ -107,7 +164,7 @@ class MyLinearRegression():
             return None
         if y.size != y_hat.size:
             return None
-        return (y - y_hat) ** 2
+        return ((y - y_hat) ** 2) / (2 * y.size)
 
     def loss_(self, y, y_hat):
         if not MyLinearRegression.is_vector_valid(y) or \
@@ -116,37 +173,68 @@ class MyLinearRegression():
         if y.size != y_hat.size:
             return None
         try:
-            return np.sum(self.loss_elem_(y, y_hat)) / (2 * y.size)
+            return np.sum(self.loss_elem_(y, y_hat))
         except:
             return None
 
     @staticmethod
     def mse_(y, y_hat):
         if not MyLinearRegression.is_vector_valid(y) or \
-            not MyLinearRegression.is_vector_valid(y_hat):
+                not MyLinearRegression.is_vector_valid(y_hat):
+            return None
+        if y.size != y_hat.size:
+            return None
+        return np.sum((y-y_hat) ** 2) / y.size
+
+    @staticmethod
+    def rmse_(y, y_hat):
+        if not MyLinearRegression.is_vector_valid(y) or \
+                not MyLinearRegression.is_vector_valid(y_hat):
             return None
         if y.size != y_hat.size:
             return None
 
-        return np.sum((y-y_hat) ** 2) / y.size
+        return np.sqrt(MyLinearRegression.mse_(y, y_hat))
 
-    def plot(self, x, y, plot_options=None):
+    @staticmethod
+    def mae_(y, y_hat):
+
+        if not MyLinearRegression.is_vector_valid(y) or \
+                not MyLinearRegression.is_vector_valid(y_hat):
+            return None
+        if y.size != y_hat.size:
+            return None
+        return np.sum(np.abs(y - y_hat)) / y.size
+
+    @staticmethod
+    def r2score_(y, y_hat):
+        if not MyLinearRegression.is_vector_valid(y) or \
+                not MyLinearRegression.is_vector_valid(y_hat):
+            return None
+        if y.size != y_hat.size:
+            return None
+        return 1 - (MyLinearRegression.mse_(y, y_hat) / np.var(y))
+
+    def plot(self, x, y, plot_options=None, normalize=False):
         if not MyLinearRegression.is_vector_valid(x) or \
-            not MyLinearRegression.is_vector_valid(y) or \
-            x.size != y.size:
+                not MyLinearRegression.is_vector_valid(y) or \
+                x.size != y.size:
             print("Warning: plotting is impossible (wrong parameters)")
             return None
         try:
+            y_hat = self.predict_(x, normalize)
             if plot_options != None:
                 plt.xlabel(plot_options['xlabel'])
                 plt.ylabel(plot_options['ylabel'])
                 plt.scatter(x, y, c='b', label=f'{plot_options["xdatalabel"]}')
-                plt.plot(x, self.predict_(x), 'xg--', label=f'{plot_options["ydatalabel"]}')
+                plt.plot(x, y_hat, 'xg--',
+                         label=f'{plot_options["ydatalabel"]}')
                 plt.legend()
             else:
                 plt.scatter(x, y, c='b')
-                plt.plot(x, self.predict_(x), 'xg--')
+                plt.plot(x, y_hat, 'xg--')
             plt.show()
-        except:
+        except Exception as e:
             print("Warning: plotting is impossible (wrong parameters)")
+            print("Error: ", e)
         return None

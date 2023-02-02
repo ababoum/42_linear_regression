@@ -30,7 +30,12 @@ while True:
         if mileage < 0:
             print("\033[31mThe value must be a positive number\033[0m")
             continue
-        print(f'The estimated price is {mileage * theta1 + theta0:.2f}')
+        price = mileage * theta1 + theta0
+        if price < 0:
+            print(
+                f'The car is too used to be sold, the estimated price is {0:.2f}')
+        else:
+            print(f'The estimated price is {mileage * theta1 + theta0:.2f}')
     except EOFError:
         print("Bye!")
         exit(1)
